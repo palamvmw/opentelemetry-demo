@@ -1,6 +1,11 @@
 FROM node:16-alpine AS deps
 RUN apk add --no-cache libc6-compat
 
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
+RUN mkdir /app && chown nodejs:nextjs /app
+USER nextjs
+
 WORKDIR /app
 
 COPY ./src/frontend/package*.json ./
@@ -22,8 +27,7 @@ RUN apk add --no-cache protoc
 
 ENV NODE_ENV=production
 
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
+
 
 COPY --from=builder /app/next.config.js ./
 COPY --from=builder /app/utils/telemetry/Instrumentation.js ./
@@ -33,8 +37,6 @@ COPY --from=deps /app/node_modules ./node_modules
 
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-USER nextjs
 
 ENV PORT 8080
 EXPOSE ${PORT}
